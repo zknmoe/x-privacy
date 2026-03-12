@@ -6,7 +6,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      width: 280px;
+      width: 300px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       padding: 16px;
       background: #fff;
@@ -24,13 +24,30 @@
 
     .header h1 { font-size: 16px; font-weight: 700; }
 
-    .field { margin-bottom: 12px; }
+    .section-label {
+      font-size: 11px;
+      color: #aab8c2;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid #e6e8eb;
+    }
+
+    .section-label:first-of-type {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+
+    .field { margin-bottom: 10px; }
 
     .field label {
       display: block;
       font-size: 13px;
       color: #536471;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
 
     .field input[type="text"] {
@@ -47,30 +64,22 @@
     .field input[type="text"]:focus { border-color: #1d9bf0; }
     .field input[type="text"]::placeholder { color: #aaa; }
 
-    .section-label {
-      font-size: 11px;
-      color: #aab8c2;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-      margin-top: 14px;
-      padding-top: 10px;
-      border-top: 1px solid #e6e8eb;
-    }
-
+    /* Toggle rows */
     .toggle-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 14px;
+      padding: 6px 0;
     }
 
-    .toggle-row span { font-size: 14px; }
+    .toggle-row .label { font-size: 13px; color: #0f1419; }
+    .toggle-row .label.primary { font-size: 14px; font-weight: 600; }
 
     .toggle {
       position: relative;
-      width: 44px;
-      height: 24px;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
     }
 
     .toggle input { opacity: 0; width: 0; height: 0; }
@@ -79,7 +88,7 @@
       position: absolute;
       inset: 0;
       background: #cfd9de;
-      border-radius: 24px;
+      border-radius: 22px;
       cursor: pointer;
       transition: background 0.2s;
     }
@@ -87,7 +96,7 @@
     .slider::before {
       content: "";
       position: absolute;
-      width: 18px; height: 18px;
+      width: 16px; height: 16px;
       left: 3px; bottom: 3px;
       background: white;
       border-radius: 50%;
@@ -96,64 +105,53 @@
     }
 
     .toggle input:checked + .slider { background: #1d9bf0; }
-    .toggle input:checked + .slider::before { transform: translateX(20px); }
+    .toggle input:checked + .slider::before { transform: translateX(18px); }
 
-    .mode-selector {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 14px;
+    /* Blur option group */
+    .blur-group {
+      background: #f7f9f9;
+      border-radius: 10px;
+      padding: 4px 12px;
+      margin-bottom: 8px;
     }
 
-    .mode-btn {
-      flex: 1;
-      padding: 8px 4px;
-      border-radius: 8px;
+    .blur-group .toggle-row {
+      border-bottom: 1px solid #e6e8eb;
+    }
+
+    .blur-group .toggle-row:last-child {
+      border-bottom: none;
+    }
+
+    /* Buttons */
+    .reload-btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
       border: 1px solid #cfd9de;
       background: #f7f9f9;
       color: #536471;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 13px;
+      font-weight: 500;
       cursor: pointer;
-      text-align: center;
+      margin-top: 12px;
       transition: all 0.15s;
     }
 
-    .mode-btn:hover { border-color: #1d9bf0; color: #0f1419; }
-
-    .mode-btn.active {
-      background: #e8f5fd;
+    .reload-btn:hover {
       border-color: #1d9bf0;
       color: #1d9bf0;
+      background: #e8f5fd;
     }
 
     .status {
       font-size: 12px;
       color: #536471;
       text-align: center;
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid #e6e8eb;
+      margin-top: 10px;
     }
 
     .status.active { color: #00ba7c; }
-
-    .reload-btn {
-      width: 100%;
-      padding: 8px;
-      border-radius: 8px;
-      border: 1px solid #cfd9de;
-      background: #f7f9f9;
-      color: #536471;
-      font-size: 12px;
-      cursor: pointer;
-      margin-top: 10px;
-      transition: all 0.15s;
-    }
-
-    .reload-btn:hover {
-      border-color: #1d9bf0;
-      color: #0f1419;
-    }
   </style>
 </head>
 <body>
@@ -161,55 +159,108 @@
   <div class="header">
     <img src="icons/icon48.png" width="24" height="24" style="border-radius: 4px;">
     <h1>X Privacy</h1>
-</div>
+  </div>
 
-  <div class="toggle-row">
-    <span>Disguise</span>
+  <!-- Master toggle -->
+  <div class="toggle-row" style="margin-bottom: 8px;">
+    <span class="label primary">Disguise</span>
     <label class="toggle">
       <input type="checkbox" id="toggle-enabled">
       <span class="slider"></span>
     </label>
   </div>
 
-  <div class="toggle-row">
-    <span>Blur account switcher</span>
-    <label class="toggle">
-      <input type="checkbox" id="blur-switch-enabled">
-      <span class="slider"></span>
-    </label>
+  <!-- Identity -->
+  <div class="section-label">Your identity</div>
+
+  <div class="field">
+    <label>@ username</label>
+    <input type="text" id="input-handle" placeholder="your_handle">
   </div>
 
-  <label style="font-size: 13px; color: #536471; display: block; margin-bottom: 6px;">Mode</label>
-  <div class="mode-selector">
-    <button class="mode-btn" data-mode="me">Just Me</button>
-    <button class="mode-btn" data-mode="all">Everyone</button>
+  <!-- Custom identity -->
+  <div class="section-label">Replace with</div>
+
+  <div class="field">
+    <label>Display name</label>
+    <input type="text" id="output-name" placeholder="Leave blank for random">
   </div>
+
+  <div class="field">
+    <label>@ username</label>
+    <input type="text" id="output-handle" placeholder="Leave blank for random">
+  </div>
+
+  <!-- Blur: Timeline -->
+  <div class="section-label">Timeline</div>
+
+  <div class="blur-group">
+    <div class="toggle-row">
+      <span class="label">Post avatars(soon)</span>
+      <label class="toggle">
+        <input type="checkbox" id="blur-post-avatars" data-key="blur_post_avatars">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="toggle-row">
+      <span class="label">Who to follow</span>
+      <label class="toggle">
+        <input type="checkbox" id="blur-who-to-follow" data-key="blur_who_to_follow">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Blur: Profile page -->
+  <div class="section-label">Profile page</div>
+
+  <div class="blur-group">
+    <div class="toggle-row">
+      <span class="label">Banner image(soon)</span>
+      <label class="toggle">
+        <input type="checkbox" id="blur-banner" data-key="blur_banner">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="toggle-row">
+      <span class="label">Profile picture(soon)</span>
+      <label class="toggle">
+        <input type="checkbox" id="blur-profile-pic" data-key="blur_profile_pic">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="toggle-row">
+      <span class="label">Bio(soon)</span>
+      <label class="toggle">
+        <input type="checkbox" id="blur-bio" data-key="blur_bio">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="toggle-row">
+      <span class="label">Location / link / join date(true: soon)</span>
+      <label class="toggle">
+        <input type="checkbox" id="blur-profile-meta" data-key="blur_profile_meta">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Blur: Sidebar -->
+  <div class="section-label">Sidebar</div>
+
+  <div class="blur-group">
+    <div class="toggle-row">
+      <span class="label">Account switcher</span>
+      <label class="toggle">
+        <input type="checkbox" id="blur-account-switcher" data-key="blur_account_switcher">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
   <button id="reload-btn" class="reload-btn">↻ Reload X tabs</button>
-  <div class="section-label">Your actual identity</div>
 
-  <div class="field">
-    <label>X profile name</label>
-    <input type="text" id="input-name" placeholder="e.g. Giulia">
-  </div>
-
-  <div class="field">
-    <label>X @ username</label>
-    <input type="text" id="input-handle" placeholder="e.g. your_handle">
-  </div>
-
-   <div class="section-label">Custom identity</div>
-
-  <div class="field">
-    <label>X displayed name</label>
-    <input type="text" id="output-name" placeholder="e.g. Anita">
-  </div>
-
-  <div class="field">
-    <label>X displayed @ username</label>
-    <input type="text" id="output-handle" placeholder="e.g. your_handle">
-  </div>
-
-  <div id="status" class="status">Enter your info above</div>
+  <div id="status" class="status">Enter your username above</div>
 
   <script src="popup.js"></script>
 </body>

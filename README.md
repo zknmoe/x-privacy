@@ -15,10 +15,8 @@ Scrolling through X on a train, in a lecture hall, or at a café? Anyone glancin
 ## Features
 
 - **Just Me mode** — hides only your own name and handle
-- **Everyone mode** — replaces all users' identities on your timeline
 - **Custom identity** — choose your own fake name and handle, or let the extension assign random ones
 - **Smart replacement** — catches names in tweets, replies, and the browser tab title
-- **Consistent aliases** — each user gets a stable fake identity per session (no flickering)
 - **Blur toggle** — optionally blur the sidebar account switcher button, unblurs on hover
 - **One-click reload** — refresh all X tabs from the popup to apply changes instantly
 - **Zero data collection** — all settings stored locally via `chrome.storage.sync`
@@ -36,12 +34,9 @@ Scrolling through X on a train, in a lecture hall, or at a café? Anyone glancin
 ## Usage
 
 1. Click the 🕵️ icon in your toolbar
-2. Enter your **profile name** and **@ username** under "Your actual identity"
-3. Optionally set a **custom identity** (leave blank for random assignment)
-4. Choose a mode:
-   - **Just Me** — only your info gets replaced
-   - **Everyone** — all users on the page get fake identities
-5. Toggle the switch on — done
+2. Enter your **@ username** under "Your identity"
+3. Optionally set a **Replace with** (leave blank for random assignment)
+4. Toggle the switch on — done
 
 After changing settings, click **Reload X tabs** at the bottom of the panel to apply immediately.
 

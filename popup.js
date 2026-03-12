@@ -1,61 +1,45 @@
 const toggleEl = document.getElementById("toggle-enabled");
-const blurToggleEl = document.getElementById("blur-switch-enabled")
-const nameEl = document.getElementById("input-name");
 const handleEl = document.getElementById("input-handle");
 const outNameEl = document.getElementById("output-name");
 const outHandleEl = document.getElementById("output-handle");
 const statusEl = document.getElementById("status");
-const modeBtns = document.querySelectorAll(".mode-btn");
 
-let currentMode = "all";
+// --- 所有 blur toggle 用 data-key 统一处理 ---
+const blurToggles = document.querySelectorAll("[data-key]");
 
-chrome.storage.sync.get(["enabled", "blur_enabled", "handle", "profileName", "displayedName", "displayedHandle", "mode"], (result) => {
+// 收集所有需要从 storage 读的 key
+const blurKeys = Array.from(blurToggles).map((el) => el.dataset.key);
+const allKeys = ["enabled", "handle", "displayedName", "displayedHandle", ...blurKeys];
+
+// --- 加载设置 ---
+chrome.storage.sync.get(allKeys, (result) => {
     toggleEl.checked = result.enabled !== false;
-    blurToggleEl.checked = result.blur_enabled !== false;
     handleEl.value = result.handle || "";
-    nameEl.value = result.profileName || "";
     outNameEl.value = result.displayedName || "";
     outHandleEl.value = result.displayedHandle || "";
-    currentMode = result.mode || "all";
-    updateModeUI();
+
+    // 所有 blur toggle 默认开启
+    blurToggles.forEach((el) => {
+        el.checked = result[el.dataset.key] !== false;
+    });
+
     updateStatus();
 });
-// --- Reload Page ---
-document.getElementById("reload-btn").addEventListener("click", () => {
-    chrome.tabs.query({ url: ["*://x.com/*", "*://twitter.com/*"] }, (tabs) => {
-        tabs.forEach((tab) => chrome.tabs.reload(tab.id));
-    });
-});
 
-// --- Toggle ---
+// --- Master toggle ---
 toggleEl.addEventListener("change", () => {
     chrome.storage.sync.set({ enabled: toggleEl.checked });
     updateStatus();
 });
 
-// --- Blur ---
-blurToggleEl.addEventListener("change", () => {
-    chrome.storage.sync.set({ blur_enabled: blurToggleEl.checked });
-    updateStatus();
-});
-
-// --- Mode 按钮 ---
-modeBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-        currentMode = btn.dataset.mode;
-        chrome.storage.sync.set({ mode: currentMode });
-        updateModeUI();
-        updateStatus();
+// --- Blur toggles: 统一事件绑定 ---
+blurToggles.forEach((el) => {
+    el.addEventListener("change", () => {
+        chrome.storage.sync.set({ [el.dataset.key]: el.checked });
     });
 });
 
-function updateModeUI() {
-    modeBtns.forEach((btn) => {
-        btn.classList.toggle("active", btn.dataset.mode === currentMode);
-    });
-}
-
-// --- 输入 debounce 工具函数 ---
+// --- 输入 debounce ---
 function debounced(el, key, transform) {
     let timer = null;
     el.addEventListener("input", () => {
@@ -69,35 +53,33 @@ function debounced(el, key, transform) {
 }
 
 debounced(handleEl, "handle", (v) => v.trim().replace("@", ""));
-debounced(nameEl, "profileName", (v) => v.trim());
-debounced(outHandleEl, "displayedHandle", (v) => v.trim().replace("@", ""));
 debounced(outNameEl, "displayedName", (v) => v.trim());
+debounced(outHandleEl, "displayedHandle", (v) => v.trim().replace("@", ""));
 
-// --- 状态显示 ---
+// --- Reload button ---
+document.getElementById("reload-btn").addEventListener("click", () => {
+    chrome.tabs.query({ url: ["*://x.com/*", "*://twitter.com/*"] }, (tabs) => {
+        tabs.forEach((tab) => chrome.tabs.reload(tab.id));
+    });
+});
+
+// --- Status ---
 function updateStatus() {
     const handle = handleEl.value.trim().replace("@", "");
-    const name = nameEl.value.trim();
-    const outHandle = outHandleEl.value.trim().replace("@", "");
-    const outName = outNameEl.value.trim();
 
     if (!toggleEl.checked) {
         statusEl.textContent = "⏸ Disguise paused";
         statusEl.className = "status";
-    } else if (!handleEl.value.trim() || !nameEl.value.trim()) {
-        statusEl.textContent = "⚠ Fill in your profile name & handle";
+    } else if (!handle) {
+        statusEl.textContent = "Enter your username above";
         statusEl.className = "status";
-    } else if (currentMode === "all") {
-        const outParts = [outNameEl.value.trim(), outHandleEl.value.trim() ? `@${outHandleEl.value.trim()}` : ""].filter(Boolean);
-        statusEl.textContent = outParts.length
-            ? `✓ Everyone hidden · You → ${outParts.join(" / ")}`
-            : "✓ Everyone hidden · You → random";
-        statusEl.className = "status active";
     } else {
-        // me mode
-        const outParts = [outNameEl.value.trim(), outHandleEl.value.trim() ? `@${outHandleEl.value.trim()}` : ""].filter(Boolean);
-        statusEl.textContent = outParts.length
-            ? `✓ You → ${outParts.join(" / ")}`
-            : `✓ Hiding ${nameEl.value.trim()}`;
+        const outName = outNameEl.value.trim();
+        const outHandle = outHandleEl.value.trim();
+        const parts = [outName, outHandle ? `@${outHandle}` : ""].filter(Boolean);
+        statusEl.textContent = parts.length
+            ? `✓ @${handle} → ${parts.join(" / ")}`
+            : `✓ @${handle} → random identity`;
         statusEl.className = "status active";
     }
 }

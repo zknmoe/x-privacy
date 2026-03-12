@@ -12,13 +12,13 @@ let nameIndex = 0;
 let seedIndex = 0;
 
 let enabled = true;
-let blur_enabled = true;
 let myHandle = "";
-let myProfileName = "";
 let displayedName = "";
 let displayedHandle = "";
 let myFakeIdentity = null; // 你自己的假身份，单独存，保持一致
-let mode = "all";
+
+let blur_account_switcher = true;
+let blur_who_to_follow = true;
 
 function getFakeIdentity(handle) {
     const key = handle.toLowerCase();
@@ -44,14 +44,14 @@ function getFakeIdentity(handle) {
 
 
 // Get settings from storage
-chrome.storage.sync.get(["enabled", "blur_enabled", "handle", "profileName", "displayedName", "displayedHandle", "mode"], (result) => {
+chrome.storage.sync.get(["enabled", "handle", "displayedName", "displayedHandle", "blur_account_switcher", "blur_who_to_follow"], (result) => {
     enabled = result.enabled !== false;
-    blur_enabled = result.blur_enabled !== false;
+    blur_account_switcher = result.blur_account_switcher !== false;
+    blur_who_to_follow = result.blur_who_to_follow !== false;
     myHandle = (result.handle || "").toLowerCase().replace("@", "");
-    myProfileName = (result.profileName || "").trim();
     displayedName = (result.displayedName || "").trim();
     displayedHandle = (result.displayedHandle || "").toLowerCase().replace("@", "");
-    mode = result.mode || "all";
+
 
     if (myHandle) {
         myFakeIdentity = getFakeIdentity(myHandle);
@@ -63,15 +63,14 @@ chrome.storage.sync.get(["enabled", "blur_enabled", "handle", "profileName", "di
 // --- 监听设置变化 ---
 chrome.storage.onChanged.addListener((changes) => {
     if (changes.enabled) enabled = changes.enabled.newValue;
-    if (changes.blur_enabled) blur_enabled = changes.blur_enabled.newValue;
+    if (changes.blur_account_switcher) blur_account_switcher = changes.blur_account_switcher.newValue;
+    if (changes.blur_who_to_follow) blur_who_to_follow = changes.blur_who_to_follow.newValue;
     if (changes.handle) {
         myHandle = (changes.handle.newValue || "").toLowerCase().replace("@", "");
         if (myHandle) myFakeIdentity = getFakeIdentity(myHandle);
     }
-    if (changes.profileName) myProfileName = (changes.profileName.newValue || "").trim();
     if (changes.displayedName) displayedName = (changes.displayedName.newValue || "").trim();
     if (changes.displayedHandle) displayedHandle = (changes.displayedHandle.newValue || "").toLowerCase().replace("@", "");
-    if (changes.mode) mode = changes.mode.newValue;
 
     if (enabled) {
         startDisguise();
@@ -98,16 +97,13 @@ function extractHandle(link) {
 }
 
 function replaceTextInElement(root) {
-    if (!myHandle && !myProfileName) return;
+    if (!myHandle) return;
     if (root.dataset && root.dataset.xprivacyText === "done") return;
 
-    const fakeName = displayedName || (myFakeIdentity ? myFakeIdentity.name : "Anon");
     const fakeHandle = displayedHandle || (myFakeIdentity
-        ? myFakeIdentity.name.toLowerCase().replace(/[\s/]/g, "")
+        ? myFakeIdentity.handle
         : "anon");
 
-    // TreeWalker: 只遍历文本节点（NodeFilter.SHOW_TEXT）
-    // 比 querySelectorAll + innerText 高效得多，不会触发 reflow
     const walker = document.createTreeWalker(
         root,
         NodeFilter.SHOW_TEXT,
@@ -119,21 +115,10 @@ function replaceTextInElement(root) {
         let text = node.textContent;
         let changed = false;
 
-        // 替换 @handle（大小写不敏感）
         if (myHandle) {
             const handleRegex = new RegExp(`@${escapeRegex(myHandle)}\\b`, "gi");
             if (handleRegex.test(text)) {
                 text = text.replace(handleRegex, `@${fakeHandle}`);
-                changed = true;
-            }
-        }
-
-
-        // 注意：只替换 2 个字符以上的名字，避免 "Li" 之类的短名误伤
-        if (myProfileName && myProfileName.length >= 2) {
-            const nameRegex = new RegExp(`\\b${escapeRegex(myProfileName)}\\b`, "gi");
-            if (nameRegex.test(text)) {
-                text = text.replace(nameRegex, fakeName);
                 changed = true;
             }
         }
@@ -166,7 +151,7 @@ function disguise() {
             if (handle) break;
         }
         if (!handle) return;
-        if (mode === "me" && handle !== myHandle) return;
+        if (handle !== myHandle) return;
 
         const identity = getFakeIdentity(handle);
 
@@ -195,67 +180,106 @@ function disguise() {
         nameBlock.dataset.xprivacy = "done";
     });
 
+    // 2. Profile page 的 UserName（没有横杠，X就是这么不一致)
+    document.querySelectorAll('[data-testid="UserName"]').forEach((nameBlock) => {
+        if (nameBlock.dataset.xprivacy === "done") return;
+
+        // 用 handle 确认身份
+        const handleSpan = nameBlock.querySelector("span[class] > span");
+        let handle = null;
+
+        nameBlock.querySelectorAll("span").forEach((span) => {
+            if (span.children.length > 0) return;
+            const text = span.textContent.trim().toLowerCase();
+            if (text.startsWith("@")) {
+                handle = text.slice(1);
+            }
+        });
+
+        if (!handle) return;
+        if (handle !== myHandle) return;
+
+        const identity = getFakeIdentity(handle);
+
+        const profileHeader = document.querySelector('[data-testid="UserProfileHeader_Items"]');
+        if (profileHeader) {
+            const profileSection = profileHeader.closest("div[data-testid]")?.parentElement;
+            if (profileSection && profileSection.dataset.xprivacy !== "blurred") {
+                profileSection.style.filter = "blur(6px)";
+                profileSection.style.transition = "filter 0.2s";
+                profileSection.addEventListener("mouseenter", () => { profileSection.style.filter = "none"; });
+                profileSection.addEventListener("mouseleave", () => { profileSection.style.filter = "blur(6px)"; });
+                profileSection.dataset.xprivacy = "blurred";
+            }
+        }
+
+        document.querySelectorAll('h2[role="heading"]').forEach((heading) => {
+            if (heading.dataset.xprivacy === "done") return;
+
+            const fakeName = myFakeIdentity ? myFakeIdentity.name : "Anon";
+            heading.innerText = fakeName;
+            heading.dataset.xprivacy = "done";
+        });
+        // 替换 @handle
+        nameBlock.querySelectorAll("span").forEach((span) => {
+            if (span.children.length > 0) return;
+            if (span.dataset.xprivacy) return;
+
+            const text = span.textContent.trim().toLowerCase();
+            if (text === `@${handle}`) {
+                span.textContent = `@${identity.handle}`;
+                span.dataset.xprivacy = "replaced";
+            }
+        });
+
+        const nameContainer = nameBlock.querySelector('div[dir="ltr"] > span');
+        if (nameContainer && !nameContainer.dataset.xprivacy) {
+            nameContainer.innerHTML = `<span>${identity.name}</span>`;
+            nameContainer.dataset.xprivacy = "replaced";
+        }
+
+        nameBlock.dataset.xprivacy = "done";
+    });
+
+
     //    只在 "me" 模式或 handle 存在时做，"all" 模式不做全局文本替换
     //    （"all" 模式下全局文本替换太重了，而且不知道哪些文本对应哪个用户）
-    if (myHandle || myProfileName) {
-        // 扫描关键区域而不是整个 body，避免性能问题
+    if (myHandle) {
         const areas = [
-            // 主 timeline
             '[data-testid="primaryColumn"]',
-            // 右侧栏
             '[data-testid="sidebarColumn"]',
-            // 通知面板
             '[aria-label="Timeline: Notifications"]',
-            // DM
             '[data-testid="DmActivityContainer"]',
-            // 页面标题
-            "title",
         ].map((s) => document.querySelector(s)).filter(Boolean);
 
         areas.forEach(replaceTextInElement);
 
-        // 页面 title（浏览器标签页上的文字）
-        if (myProfileName && document.title.includes(myProfileName)) {
-            document.title = document.title.replace(
-                new RegExp(escapeRegex(myProfileName), "gi"),
-                myFakeIdentity ? myFakeIdentity.name : "Anon"
-            );
-        }
-        if (myHandle && document.title.toLowerCase().includes(myHandle)) {
-            const fakeHandle = myFakeIdentity
-                ? myFakeIdentity.handle
-                : "anon";
-            document.title = document.title.replace(
-                new RegExp(`@?${escapeRegex(myHandle)}`, "gi"),
-                fakeHandle
-            );
+        // 页面 title 直接写死
+        if (document.title.toLowerCase().includes(myHandle)) {
+            document.title = "X";
         }
     }
+
 
     // 4. 模糊 account switcher
     const accountBtn = document.querySelector('[data-testid="SideNav_AccountSwitcher_Button"]');
     if (accountBtn && accountBtn.dataset.xprivacy !== "blurred") {
-        const fakeName = myFakeIdentity ? myFakeIdentity.name : "Anon";
         const fakeHandle = myFakeIdentity ? myFakeIdentity.handle : "anon";
+        const fakeName = myFakeIdentity ? myFakeIdentity.name : "Anon";
 
         accountBtn.querySelectorAll("span").forEach((span) => {
             if (span.children.length > 0) return;
             const text = span.textContent.trim().toLowerCase();
 
             if (myHandle && text.includes(myHandle)) {
-                span.textContent = span.textContent.replace(
-                    new RegExp(escapeRegex(myHandle), "gi"), fakeHandle
-                );
-            }
-            if (myProfileName && myProfileName.length >= 2 &&
-                text.includes(myProfileName.toLowerCase())) {
-                span.textContent = span.textContent.replace(
-                    new RegExp(escapeRegex(myProfileName), "gi"), fakeName
-                );
+                span.textContent = `@${fakeHandle}`;
+            } else if (text.length > 0 && !text.startsWith("@")) {
+                // handle以外的文本大概率是显示名，直接换
+                span.textContent = fakeName;
             }
         });
 
-        if (blur_enabled) {
+        if (blur_account_switcher) {
             accountBtn.style.filter = "blur(6px)";
             accountBtn.style.transition = "filter 0.2s";
             accountBtn.addEventListener("mouseenter", () => { accountBtn.style.filter = "none"; });
@@ -265,7 +289,17 @@ function disguise() {
         accountBtn.dataset.xprivacy = "blurred";
     }
 
-
+    // 5. 模糊 推荐关注
+    if (blur_who_to_follow) {
+        document.querySelectorAll('[role="complementary"]').forEach((el) => {
+            if (el.dataset.xprivacy === "blurred") return;
+            el.style.filter = "blur(6px)";
+            el.style.transition = "filter 0.2s";
+            el.addEventListener("mouseenter", () => { el.style.filter = "none"; });
+            el.addEventListener("mouseleave", () => { el.style.filter = "blur(6px)"; });
+            el.dataset.xprivacy = "blurred";
+        });
+    }
 }
 
 // --- MutationObserver ---
