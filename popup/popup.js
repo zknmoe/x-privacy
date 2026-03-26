@@ -4,12 +4,53 @@ const outNameEl = document.getElementById("output-name");
 const outHandleEl = document.getElementById("output-handle");
 const statusEl = document.getElementById("status");
 
-// --- 所有 blur toggle 用 data-key 统一处理 ---
+// --- i18n ---
+let currentLang = "en";
+
+function applyLanguage(lang) {
+    currentLang = lang;
+    const t = i18n[lang] || i18n.en;
+
+    // 替换 textContent
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const key = el.dataset.i18n;
+        if (t[key]) el.textContent = t[key];
+    });
+
+    // 替换 placeholder
+    document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+        const key = el.dataset.i18nPlaceholder;
+        if (t[key]) el.placeholder = t[key];
+    });
+
+    // 语言按钮高亮
+    document.querySelectorAll(".lang-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.lang === lang);
+    });
+
+    // 保存语言偏好
+    chrome.storage.sync.set({ lang });
+
+    // 刷新状态栏
+    updateStatus();
+}
+
+document.querySelectorAll(".lang-btn").forEach((btn) => {
+    btn.addEventListener("click", () => applyLanguage(btn.dataset.lang));
+});
+
+// --- 所有 blur toggle/chip 用 data-key 统一处理 ---
 const blurToggles = document.querySelectorAll("[data-key]");
 
-// 收集所有需要从 storage 读的 key
 const blurKeys = Array.from(blurToggles).map((el) => el.dataset.key);
-const allKeys = ["enabled", "handle", "displayedName", "displayedHandle", ...blurKeys];
+const allKeys = ["enabled", "handle", "displayedName", "displayedHandle", "lang", ...blurKeys];
+
+// --- Chip 视觉状态同步 ---
+function syncChipVisual(input) {
+    const chip = input.closest(".chip");
+    if (!chip) return;
+    chip.classList.toggle("checked", input.checked);
+}
 
 // --- 加载设置 ---
 chrome.storage.sync.get(allKeys, (result) => {
@@ -18,10 +59,14 @@ chrome.storage.sync.get(allKeys, (result) => {
     outNameEl.value = result.displayedName || "";
     outHandleEl.value = result.displayedHandle || "";
 
-    // 所有 blur toggle 默认开启
     blurToggles.forEach((el) => {
         el.checked = result[el.dataset.key] !== false;
+        syncChipVisual(el);
     });
+
+    // 加载语言（默认跟随浏览器）
+    const savedLang = result.lang || (navigator.language.startsWith("zh") ? "zh" : "en");
+    applyLanguage(savedLang);
 
     updateStatus();
 });
@@ -32,10 +77,11 @@ toggleEl.addEventListener("change", () => {
     updateStatus();
 });
 
-// --- Blur toggles: 统一事件绑定 ---
+// --- Blur toggles + chips ---
 blurToggles.forEach((el) => {
     el.addEventListener("change", () => {
         chrome.storage.sync.set({ [el.dataset.key]: el.checked });
+        syncChipVisual(el);
     });
 });
 
@@ -56,7 +102,7 @@ debounced(handleEl, "handle", (v) => v.trim().replace("@", ""));
 debounced(outNameEl, "displayedName", (v) => v.trim());
 debounced(outHandleEl, "displayedHandle", (v) => v.trim().replace("@", ""));
 
-// --- Reload button ---
+// --- Reload ---
 document.getElementById("reload-btn").addEventListener("click", () => {
     chrome.tabs.query({ url: ["*://x.com/*", "*://twitter.com/*"] }, (tabs) => {
         tabs.forEach((tab) => chrome.tabs.reload(tab.id));
@@ -66,12 +112,13 @@ document.getElementById("reload-btn").addEventListener("click", () => {
 // --- Status ---
 function updateStatus() {
     const handle = handleEl.value.trim().replace("@", "");
+    const t = i18n[currentLang] || i18n.en;
 
     if (!toggleEl.checked) {
-        statusEl.textContent = "⏸ Disguise paused";
+        statusEl.textContent = t.status_paused;
         statusEl.className = "status";
     } else if (!handle) {
-        statusEl.textContent = "Enter your username above";
+        statusEl.textContent = t.status_enter;
         statusEl.className = "status";
     } else {
         const outName = outNameEl.value.trim();
@@ -79,7 +126,7 @@ function updateStatus() {
         const parts = [outName, outHandle ? `@${outHandle}` : ""].filter(Boolean);
         statusEl.textContent = parts.length
             ? `✓ @${handle} → ${parts.join(" / ")}`
-            : `✓ @${handle} → random identity`;
+            : `✓ @${handle} → ${t.status_random}`;
         statusEl.className = "status active";
     }
 }

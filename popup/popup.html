@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 300px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: 16px;
+      background: #fff;
+      color: #0f1419;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e6e8eb;
+    }
+
+    .header h1 { font-size: 16px; font-weight: 700; }
+
+    .section-label {
+      font-size: 11px;
+      color: #aab8c2;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid #e6e8eb;
+    }
+
+    .section-label:first-of-type {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+
+    .field { margin-bottom: 10px; }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      color: #536471;
+      margin-bottom: 4px;
+    }
+
+    .field input[type="text"] {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #cfd9de;
+      background: #f7f9f9;
+      color: #0f1419;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .field input[type="text"]:focus { border-color: #1d9bf0; }
+    .field input[type="text"]::placeholder { color: #aaa; }
+
+    /* Toggle rows */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+    }
+
+    .toggle-row .label { font-size: 13px; color: #0f1419; }
+    .toggle-row .label.primary { font-size: 14px; font-weight: 600; }
+
+    .toggle {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .toggle input { opacity: 0; width: 0; height: 0; }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: #cfd9de;
+      border-radius: 22px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .slider::before {
+      content: "";
+      position: absolute;
+      width: 16px; height: 16px;
+      left: 3px; bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    .toggle input:checked + .slider { background: #1d9bf0; }
+    .toggle input:checked + .slider::before { transform: translateX(18px); }
+
+    /* Blur option group */
+    .blur-group {
+      background: #f7f9f9;
+      border-radius: 10px;
+      padding: 4px 12px;
+      margin-bottom: 8px;
+    }
+
+    .blur-group .toggle-row {
+      border-bottom: 1px solid #e6e8eb;
+    }
+
+    .blur-group .toggle-row:last-child {
+      border-bottom: none;
+    }
+
+    /* Checkbox chips */
+    .checkbox-group {
+      background: #f7f9f9;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      border: 1px solid #e6e8eb;
+      background: #fff;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 12px;
+      color: #536471;
+      user-select: none;
+    }
+
+    .chip:hover {
+      border-color: #1d9bf0;
+      color: #1d9bf0;
+    }
+
+    .chip input { display: none; }
+
+    .chip.checked {
+      background: #e8f5fd;
+      border-color: #1d9bf0;
+      color: #1d9bf0;
+    }
+
+    .chip .check-icon {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      border: 1.5px solid #cfd9de;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .chip.checked .check-icon {
+      background: #1d9bf0;
+      border-color: #1d9bf0;
+    }
+
+    .chip.checked .check-icon::after {
+      content: "";
+      width: 6px;
+      height: 3px;
+      border-left: 1.5px solid #fff;
+      border-bottom: 1.5px solid #fff;
+      transform: rotate(-45deg) translateY(-0.5px);
+    }
+
+    /* URL warning */
+    .url-warning {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 8px 10px;
+      background: #fef3e2;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 11px;
+      line-height: 1.4;
+      color: #946200;
+    }
+
+    .url-warning .warn-icon {
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Language picker */
+    .lang-picker {
+      display: flex;
+      gap: 4px;
+      margin-left: auto;
+    }
+
+    .lang-btn {
+      padding: 2px 8px;
+      border-radius: 9999px;
+      border: 1px solid #e6e8eb;
+      background: none;
+      font-size: 11px;
+      color: #536471;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .lang-btn:hover {
+      border-color: #1d9bf0;
+      color: #1d9bf0;
+    }
+
+    .lang-btn.active {
+      background: #1d9bf0;
+      border-color: #1d9bf0;
+      color: #fff;
+    }
+
+    /* Buttons */
+    .reload-btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #cfd9de;
+      background: #f7f9f9;
+      color: #536471;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: all 0.15s;
+    }
+
+    .reload-btn:hover {
+      border-color: #1d9bf0;
+      color: #1d9bf0;
+      background: #e8f5fd;
+    }
+
+    .status {
+      font-size: 12px;
+      color: #536471;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .status.active { color: #00ba7c; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <img src="../icons/icon48.png" width="24" height="24" style="border-radius: 4px;">
+    <h1 data-i18n="title">X Privacy</h1>
+    <div class="lang-picker">
+      <button class="lang-btn" data-lang="en">EN</button>
+      <button class="lang-btn" data-lang="zh">中文</button>
+    </div>
+  </div>
+
+  <!-- Master toggle -->
+  <div class="toggle-row" style="margin-bottom: 8px;">
+    <span class="label primary" data-i18n="disguise">Disguise</span>
+    <label class="toggle">
+      <input type="checkbox" id="toggle-enabled">
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <!-- Identity -->
+  <div class="section-label" data-i18n="your_identity">Your identity</div>
+
+  <div class="field">
+    <label data-i18n="username">@ username</label>
+    <input type="text" id="input-handle" data-i18n-placeholder="username_placeholder" placeholder="your_handle">
+  </div>
+
+  <!-- Custom identity -->
+  <div class="section-label" data-i18n="replace_with">Replace with</div>
+
+  <div class="field">
+    <label data-i18n="display_name">Display name</label>
+    <input type="text" id="output-name" data-i18n-placeholder="random_placeholder" placeholder="Leave blank for random">
+  </div>
+
+  <div class="field">
+    <label data-i18n="username">@ username</label>
+    <input type="text" id="output-handle" data-i18n-placeholder="random_placeholder" placeholder="Leave blank for random">
+  </div>
+
+  <!-- Blur: Profile page -->
+  <div class="section-label" data-i18n="profile_page">Profile page</div>
+
+  <div class="url-warning">
+    <svg class="warn-icon" width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM8 5v3.5M8 10.5h.007" 
+            stroke="#946200" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span data-i18n="url_warning">Your @handle stays visible in the URL bar when visiting your own profile — avoid navigating there in public.</span>
+  </div>
+
+  <div class="checkbox-group">
+    <label class="chip">
+      <input type="checkbox" data-key="blur_profile_banner">
+      <span class="check-icon"></span>
+      <span data-i18n="banner">Banner</span>
+    </label>
+    <label class="chip">
+      <input type="checkbox" data-key="blur_profile_image">
+      <span class="check-icon"></span>
+      <span data-i18n="avatar">Avatar</span>
+    </label>
+    <label class="chip">
+      <input type="checkbox" data-key="blur_user_description">
+      <span class="check-icon"></span>
+      <span data-i18n="bio">Bio</span>
+    </label>
+    <label class="chip">
+      <input type="checkbox" data-key="blur_profile_header">
+      <span class="check-icon"></span>
+      <span data-i18n="info">Info</span>
+    </label>
+  </div>
+
+  <!-- Blur: Sidebar -->
+  <div class="section-label" data-i18n="sidebar">Sidebar</div>
+
+  <div class="blur-group">
+    <div class="toggle-row">
+      <span class="label" data-i18n="account_switcher">Account switcher</span>
+      <label class="toggle">
+        <input type="checkbox" data-key="blur_account_switcher">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="toggle-row">
+      <span class="label" data-i18n="who_to_follow">Who to follow</span>
+      <label class="toggle">
+        <input type="checkbox" data-key="blur_who_to_follow">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <button id="reload-btn" class="reload-btn" data-i18n="reload">↻ Reload X tabs</button>
+
+  <div id="status" class="status">Enter your username above</div>
+
+  <script src="i18n.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
